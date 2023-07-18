@@ -1,0 +1,19 @@
+{
+	"name": "LS_SQL_DWH",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=arm-nube-sql-dwh1.database.windows.net;Initial Catalog=DWH_Comercial;User ID=admin_dwh",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "SQLArmNubeAdminPass"
+			}
+		}
+	}
+}

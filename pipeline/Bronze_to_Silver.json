@@ -1,0 +1,347 @@
+{
+	"name": "Bronze_to_Silver",
+	"properties": {
+		"activities": [
+			{
+				"name": "Basic Full-Delta Loads",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Implementacion/Estandarizaciones/MergeLoadsOrFullLoads",
+					"baseParameters": {
+						"is_full_load": {
+							"value": "@pipeline().parameters.is_full_load",
+							"type": "Expression"
+						},
+						"schema": {
+							"value": "@pipeline().parameters.schema",
+							"type": "Expression"
+						},
+						"table": {
+							"value": "@pipeline().parameters.table_name",
+							"type": "Expression"
+						},
+						"folder_date": {
+							"value": "@pipeline().parameters.folder_date",
+							"type": "Expression"
+						},
+						"RowKey": {
+							"value": "@pipeline().parameters.RowKey",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ADBK",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "If Condition1",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Basic Full-Delta Loads",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.state, 'Exitoso')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "SP_Failure",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[conf].[PostLogAuditoriaCargas]",
+								"storedProcedureParameters": {
+									"EstadoEjecucion": {
+										"value": "0",
+										"type": "Int32"
+									},
+									"FilasCopiadas": {
+										"value": null,
+										"type": "Int32"
+									},
+									"FilasLeidas": {
+										"value": null,
+										"type": "Int32"
+									},
+									"FkControlCargas": {
+										"value": "99",
+										"type": "Int64"
+									},
+									"LogDataFactory": {
+										"value": {
+											"value": "@string(activity('Basic Full-Delta Loads').output)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ArchivoFuente": {
+										"value": {
+											"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.table",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"NombreTrigger": {
+										"value": {
+											"value": "@pipeline().TriggerTime",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Pipeline": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TiempoCopiado": {
+										"value": {
+											"value": "@activity('Basic Full-Delta Loads').output.executionDuration",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_SQL_CC",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Fail1",
+							"type": "Fail",
+							"dependsOn": [
+								{
+									"activity": "SP_Failure",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"message": {
+									"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.error",
+									"type": "Expression"
+								},
+								"errorCode": "500"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "SP_Success",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[conf].[PostLogAuditoriaCargas]",
+								"storedProcedureParameters": {
+									"EstadoEjecucion": {
+										"value": "1",
+										"type": "Int32"
+									},
+									"FilasCopiadas": {
+										"value": {
+											"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.rowsWritten",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									},
+									"FilasLeidas": {
+										"value": {
+											"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.rowsRead",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									},
+									"FkControlCargas": {
+										"value": "99",
+										"type": "Int64"
+									},
+									"LogDataFactory": {
+										"value": {
+											"value": "@string(activity('Basic Full-Delta Loads').output)",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"ArchivoFuente": {
+										"value": {
+											"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.table",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"NombreTrigger": {
+										"value": {
+											"value": "@pipeline().TriggerTime",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"Pipeline": {
+										"value": {
+											"value": "@pipeline().Pipeline",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"TiempoCopiado": {
+										"value": {
+											"value": "@activity('Basic Full-Delta Loads').output.executionDuration",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_SQL_CC",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SP_Failure_ErrorNoEsperado",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Basic Full-Delta Loads",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[conf].[PostLogAuditoriaCargas]",
+					"storedProcedureParameters": {
+						"EstadoEjecucion": {
+							"value": "0",
+							"type": "Int32"
+						},
+						"FilasCopiadas": {
+							"value": null,
+							"type": "Int32"
+						},
+						"FilasLeidas": {
+							"value": null,
+							"type": "Int32"
+						},
+						"FkControlCargas": {
+							"value": "99",
+							"type": "Int64"
+						},
+						"LogDataFactory": {
+							"value": {
+								"value": "@string(activity('Basic Full-Delta Loads').error.message)",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"ArchivoFuente": {
+							"value": {
+								"value": "@pipeline().parameters.table_name",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"NombreTrigger": {
+							"value": {
+								"value": "@pipeline().TriggerTime",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"Pipeline": {
+							"value": {
+								"value": "@pipeline().Pipeline",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"TiempoCopiado": {
+							"value": {
+								"value": "@activity('Basic Full-Delta Loads').output.executionDuration",
+								"type": "Expression"
+							},
+							"type": "Int32"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_CC",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"is_full_load": {
+				"type": "string"
+			},
+			"schema": {
+				"type": "string"
+			},
+			"table_name": {
+				"type": "string"
+			},
+			"folder_date": {
+				"type": "string"
+			},
+			"RowKey": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "2. SILVER"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-30T20:33:59Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,37 @@
+{
+	"name": "Trigger_Diario_Deltas_SAP_Logistico",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "SAP_to_BronzeZone",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Proceso": "Logistico",
+					"SistemaFuente": "HANA",
+					"Subproceso": "Pedidos"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2023-07-12T17:54:00",
+				"timeZone": "SA Pacific Standard Time",
+				"schedule": {
+					"minutes": [
+						59
+					],
+					"hours": [
+						23
+					]
+				}
+			}
+		}
+	}
+}

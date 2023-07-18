@@ -1,0 +1,37 @@
+{
+	"name": "Trigger_Diario_Deltas_SQL_Comercial",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "SQL_to_BronzeZone",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Proceso": "Comercial",
+					"SistemaFuente": "SQL_DBV1",
+					"Subproceso": "Subpr_3"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2023-07-12T17:52:00",
+				"timeZone": "SA Pacific Standard Time",
+				"schedule": {
+					"minutes": [
+						59
+					],
+					"hours": [
+						23
+					]
+				}
+			}
+		}
+	}
+}
