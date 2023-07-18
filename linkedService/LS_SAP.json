@@ -1,0 +1,23 @@
+{
+	"name": "LS_SAP",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SapHana",
+		"typeProperties": {
+			"connectionString": "SERVERNODE=10.3.16.13:30015;UID=SAPCONSULTA",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "SapPassWordConsulta"
+			}
+		},
+		"connectVia": {
+			"referenceName": "ARQLR02-Shared",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

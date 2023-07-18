@@ -1,0 +1,19 @@
+{
+	"name": "LS_SQL_CC",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=sqldv-modernadwh-prod.database.windows.net;Initial Catalog=SQLDB-ModernaDWH-Prod;User ID=admin_sql",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "SQLConfigPassword"
+			}
+		}
+	}
+}

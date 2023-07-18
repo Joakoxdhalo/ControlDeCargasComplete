@@ -1,0 +1,19 @@
+{
+	"name": "LS_SQL_DBV1",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=arm-nube-sql-dbv1.database.windows.net;Initial Catalog=ARM_ModernaBI;User ID=admin_moderna",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "SQLModernaBIAdminPass"
+			}
+		}
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"name": "LS_ADBK",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "Servicio que nos permite conectar con Azure Databricks",
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-3559695151498017.17.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KEYVAULT",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "DBW-Token"
+			},
+			"existingClusterId": "0623-191725-f5jlsq0l"
+		}
+	}
+}
