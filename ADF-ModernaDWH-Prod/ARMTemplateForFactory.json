@@ -1,0 +1,3203 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADF-ModernaDWH-Prod"
+		},
+		"LS_SAP_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_SAP'",
+			"defaultValue": "SERVERNODE=10.3.16.13:30015;UID=SAPCONSULTA"
+		},
+		"LS_SQL_CC_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_SQL_CC'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=sqldv-modernadwh-prod.database.windows.net;Initial Catalog=SQLDB-ModernaDWH-Prod;User ID=admin_sql"
+		},
+		"LS_SQL_DBV1_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_SQL_DBV1'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=arm-nube-sql-dbv1.database.windows.net;Initial Catalog=ARM_ModernaBI;User ID=admin_moderna"
+		},
+		"LS_SQL_DWH_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_SQL_DWH'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=arm-nube-sql-dwh1.database.windows.net;Initial Catalog=DWH_Comercial;User ID=admin_dwh"
+		},
+		"LS_ADBK_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0623-191725-f5jlsq0l"
+		},
+		"LS_ADLS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://dlsmodernadwhprod.dfs.core.windows.net/"
+		},
+		"LS_KEYVAULT_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://KV-ModernaDWH-Prod.vault.azure.net/"
+		},
+		"Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_Proceso": {
+			"type": "string",
+			"defaultValue": "Comercial"
+		},
+		"Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_SistemaFuente": {
+			"type": "string",
+			"defaultValue": "HANA"
+		},
+		"Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_Subproceso": {
+			"type": "string",
+			"defaultValue": "Subpr_1"
+		},
+		"Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_Proceso": {
+			"type": "string",
+			"defaultValue": "Logistico"
+		},
+		"Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_SistemaFuente": {
+			"type": "string",
+			"defaultValue": "HANA"
+		},
+		"Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_Subproceso": {
+			"type": "string",
+			"defaultValue": "Pedidos"
+		},
+		"Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_Proceso": {
+			"type": "string",
+			"defaultValue": "Comercial"
+		},
+		"Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_SistemaFuente": {
+			"type": "string",
+			"defaultValue": "SQL_DBV1"
+		},
+		"Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_Subproceso": {
+			"type": "string",
+			"defaultValue": "Subpr_3"
+		},
+		"ARQLR02-Shared_properties_typeProperties_linkedInfo_resourceId": {
+			"type": "string",
+			"defaultValue": "/subscriptions/edff7a7d-111f-466f-9d0b-4f96151ffc5c/resourcegroups/ModernaRG01/providers/Microsoft.DataFactory/factories/ModernaDataFactory02/integrationruntimes/ArqIR02"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/Bronze_to_Silver')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Basic Full-Delta Loads",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Implementacion/Estandarizaciones/MergeLoadsOrFullLoads",
+							"baseParameters": {
+								"is_full_load": {
+									"value": "@pipeline().parameters.is_full_load",
+									"type": "Expression"
+								},
+								"schema": {
+									"value": "@pipeline().parameters.schema",
+									"type": "Expression"
+								},
+								"table": {
+									"value": "@pipeline().parameters.table_name",
+									"type": "Expression"
+								},
+								"folder_date": {
+									"value": "@pipeline().parameters.folder_date",
+									"type": "Expression"
+								},
+								"RowKey": {
+									"value": "@pipeline().parameters.RowKey",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ADBK",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "If Condition1",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Basic Full-Delta Loads",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.state, 'Exitoso')",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "SP_Failure",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+										"storedProcedureParameters": {
+											"EstadoEjecucion": {
+												"value": "0",
+												"type": "Int32"
+											},
+											"FilasCopiadas": {
+												"value": null,
+												"type": "Int32"
+											},
+											"FilasLeidas": {
+												"value": null,
+												"type": "Int32"
+											},
+											"FkControlCargas": {
+												"value": "99",
+												"type": "Int64"
+											},
+											"LogDataFactory": {
+												"value": {
+													"value": "@string(activity('Basic Full-Delta Loads').output)",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"ArchivoFuente": {
+												"value": {
+													"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.table",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"NombreTrigger": {
+												"value": {
+													"value": "@pipeline().TriggerTime",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"Pipeline": {
+												"value": {
+													"value": "@pipeline().Pipeline",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"TiempoCopiado": {
+												"value": {
+													"value": "@activity('Basic Full-Delta Loads').output.executionDuration",
+													"type": "Expression"
+												},
+												"type": "Int32"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_SQL_CC",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Fail1",
+									"type": "Fail",
+									"dependsOn": [
+										{
+											"activity": "SP_Failure",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"message": {
+											"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.error",
+											"type": "Expression"
+										},
+										"errorCode": "500"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "SP_Success",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+										"storedProcedureParameters": {
+											"EstadoEjecucion": {
+												"value": "1",
+												"type": "Int32"
+											},
+											"FilasCopiadas": {
+												"value": {
+													"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.rowsWritten",
+													"type": "Expression"
+												},
+												"type": "Int32"
+											},
+											"FilasLeidas": {
+												"value": {
+													"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.rowsRead",
+													"type": "Expression"
+												},
+												"type": "Int32"
+											},
+											"FkControlCargas": {
+												"value": "99",
+												"type": "Int64"
+											},
+											"LogDataFactory": {
+												"value": {
+													"value": "@string(activity('Basic Full-Delta Loads').output)",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"ArchivoFuente": {
+												"value": {
+													"value": "@activity('Basic Full-Delta Loads').output.runOutput.Logs.Params.table",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"NombreTrigger": {
+												"value": {
+													"value": "@pipeline().TriggerTime",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"Pipeline": {
+												"value": {
+													"value": "@pipeline().Pipeline",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"TiempoCopiado": {
+												"value": {
+													"value": "@activity('Basic Full-Delta Loads').output.executionDuration",
+													"type": "Expression"
+												},
+												"type": "Int32"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_SQL_CC",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "SP_Failure_ErrorNoEsperado",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "Basic Full-Delta Loads",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+							"storedProcedureParameters": {
+								"EstadoEjecucion": {
+									"value": "0",
+									"type": "Int32"
+								},
+								"FilasCopiadas": {
+									"value": null,
+									"type": "Int32"
+								},
+								"FilasLeidas": {
+									"value": null,
+									"type": "Int32"
+								},
+								"FkControlCargas": {
+									"value": "99",
+									"type": "Int64"
+								},
+								"LogDataFactory": {
+									"value": {
+										"value": "@string(activity('Basic Full-Delta Loads').error.message)",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"ArchivoFuente": {
+									"value": {
+										"value": "@pipeline().parameters.table_name",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"NombreTrigger": {
+									"value": {
+										"value": "@pipeline().TriggerTime",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"Pipeline": {
+									"value": {
+										"value": "@pipeline().Pipeline",
+										"type": "Expression"
+									},
+									"type": "String"
+								},
+								"TiempoCopiado": {
+									"value": {
+										"value": "@activity('Basic Full-Delta Loads').output.executionDuration",
+										"type": "Expression"
+									},
+									"type": "Int32"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_SQL_CC",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"is_full_load": {
+						"type": "string"
+					},
+					"schema": {
+						"type": "string"
+					},
+					"table_name": {
+						"type": "string"
+					},
+					"folder_date": {
+						"type": "string"
+					},
+					"RowKey": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "2. SILVER"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-06-30T20:33:59Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADBK')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_CC')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SAP_to_BronzeZone')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lkp-CC-SQL",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * FROM conf.ControlCargas\nWHERE Proceso = '@{pipeline().parameters.Proceso}'\nAND Subproceso = '@{pipeline().parameters.Subproceso}'\nAND SistemaFuente = '@{pipeline().parameters.SistemaFuente}'\nAND IndicadorCargaActiva= 1\n",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_SQL_CC",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEach-CC",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "TimeNow",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lkp-CC-SQL').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "IsFull",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@bool(item().IndicadorCargaFull)\n\n",
+											"type": "Expression"
+										},
+										"ifFalseActivities": [
+											{
+												"name": "UpdateCampoDelta_Delta",
+												"type": "Script",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Deltas",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												},
+												"typeProperties": {
+													"scripts": [
+														{
+															"type": "Query",
+															"text": {
+																"value": "UPDATE conf.ControlCargas set ValorCampoFechaCreacion = \nCASE WHEN ValorCampoFechaCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoHoraCreacion = \nCASE WHEN ValorCampoHoraCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 8, 6)}'\nELSE ValorCampoHoraCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoFechaModificacion = \nCASE WHEN ValorCampoFechaModificacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaModificacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'",
+																"type": "Expression"
+															}
+														}
+													],
+													"scriptBlockExecutionTimeout": "02:00:00"
+												}
+											},
+											{
+												"name": "Copy_From_SAP_To_ADLS_Delta",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 1,
+													"retryIntervalInSeconds": 45,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "SapHanaSource",
+														"query": {
+															"value": "SELECT @{item().ColumnasArchivoFuente}\nFROM\n@{item().EsquemaFuente}.@{item().ArchivoFuente}\n@{\nreplace(\n        replace(\n            replace(\n                        item().FiltrosArchivoFuenteParsed, '{variableDF1}', substring(variables('TimeNow'), 0, 8)\n            ), '{variableDF2}', substring(variables('TimeNow'), 8, 6)\n        ), '{variableDF3}', substring(variables('TimeNow'), 0, 8)\n)\n}",
+															"type": "Expression"
+														},
+														"partitionOption": "None"
+													},
+													"sink": {
+														"type": "ParquetSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "ParquetWriteSettings"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "DS_SAP",
+														"type": "DatasetReference",
+														"parameters": {
+															"Esquema": {
+																"value": "@{item().EsquemaFuente}",
+																"type": "Expression"
+															},
+															"Table": {
+																"value": "@{item().ArchivoFuente}",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "DS_ADLS",
+														"type": "DatasetReference",
+														"parameters": {
+															"Ruta": {
+																"value": "@{item().RutaArchivoDestinoParsed}/@{variables('TimeNow')}",
+																"type": "Expression"
+															},
+															"Archivo": {
+																"value": "@item().ArchivoDestino",
+																"type": "Expression"
+															},
+															"Container": {
+																"value": "@item().ContenedorDestino",
+																"type": "Expression"
+															},
+															"Extension": {
+																"value": "@item().ExtensionArchivoDestino",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "SP_Success_Delta",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Delta",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "1",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Delta').output.rowsCopied",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Delta').output.rowsRead",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)\n\n",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Delta').output.copyDuration",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure_Delta",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Delta",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "Bronze_To_Silver_Deltas",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SAP_To_ADLS_Delta",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "Bronze_to_Silver",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"is_full_load": {
+															"value": "@{item().IndicadorCargaFull}",
+															"type": "Expression"
+														},
+														"schema": {
+															"value": "@{item().EsquemaFuente}",
+															"type": "Expression"
+														},
+														"table_name": {
+															"value": "@{item().ArchivoFuente}",
+															"type": "Expression"
+														},
+														"folder_date": {
+															"value": "@variables('TimeNow')",
+															"type": "Expression"
+														},
+														"RowKey": {
+															"value": "@{item().NombreCampoRowKey}",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "SP_Failure_Delta_2",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Deltas",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure_Delta_3",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SAP_To_ADLS_Delta",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											}
+										],
+										"ifTrueActivities": [
+											{
+												"name": "SP_Success",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Full",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "1",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Full').output.rowsCopied",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Full').output.rowsRead",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Full').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Full').output.copyDuration",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Full",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Full').output)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "Copy_From_SAP_To_ADLS_Full",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 1,
+													"retryIntervalInSeconds": 45,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "SapHanaSource",
+														"query": {
+															"value": "SELECT @{item().ColumnasArchivoFuente}\nFROM\n@{item().EsquemaFuente}.@{item().ArchivoFuente}\nWHERE ?AdfHanaDynamicRangePartitionCondition\n@{item().FiltrosArchivoFuenteParsed}",
+															"type": "Expression"
+														},
+														"partitionOption": "SapHanaDynamicRange",
+														"partitionSettings": {
+															"partitionColumnName": {
+																"value": "@{item().NombreCampoParticion}",
+																"type": "Expression"
+															}
+														}
+													},
+													"sink": {
+														"type": "ParquetSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "ParquetWriteSettings"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "DS_SAP",
+														"type": "DatasetReference",
+														"parameters": {
+															"Esquema": {
+																"value": "@{item().EsquemaFuente}",
+																"type": "Expression"
+															},
+															"Table": {
+																"value": "@{item().ArchivoFuente}",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "DS_ADLS",
+														"type": "DatasetReference",
+														"parameters": {
+															"Ruta": {
+																"value": "@item().RutaArchivoDestinoParsed",
+																"type": "Expression"
+															},
+															"Archivo": {
+																"value": "@item().ArchivoDestino",
+																"type": "Expression"
+															},
+															"Container": {
+																"value": "@item().ContenedorDestino",
+																"type": "Expression"
+															},
+															"Extension": {
+																"value": "@item().ExtensionArchivoDestino",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "Bronze_To_Silver_Full",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SAP_To_ADLS_Full",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "Bronze_to_Silver",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"is_full_load": {
+															"value": "@{item().IndicadorCargaFull}",
+															"type": "Expression"
+														},
+														"schema": {
+															"value": "@{item().EsquemaFuente}",
+															"type": "Expression"
+														},
+														"table_name": {
+															"value": "@{item().ArchivoFuente}",
+															"type": "Expression"
+														},
+														"folder_date": "No aplica",
+														"RowKey": {
+															"value": "@{item().NombreCampoRowKey}",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "UpdateCampoDelta_Full",
+												"type": "Script",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Full",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												},
+												"typeProperties": {
+													"scripts": [
+														{
+															"type": "Query",
+															"text": {
+																"value": "UPDATE conf.ControlCargas set ValorCampoFechaCreacion = \nCASE WHEN CampoFechaCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoHoraCreacion = \nCASE WHEN CampoHoraCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 8, 6)}'\nELSE ValorCampoHoraCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoFechaModificacion = \nCASE WHEN CampoFechaModificacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaModificacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'",
+																"type": "Expression"
+															}
+														}
+													],
+													"scriptBlockExecutionTimeout": "02:00:00"
+												}
+											},
+											{
+												"name": "SP_Failure_2",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Full",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Full').output)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure_3",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SAP_To_ADLS_Full",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Full').output)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "TimeNow",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "Lkp-CC-SQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "TimeNow",
+							"value": {
+								"value": "@{formatDateTime(subtractFromTime(utcNow(), 300, 'Minute'), 'yyyyMMddHHmmss')}",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"Proceso": {
+						"type": "string",
+						"defaultValue": "Comercial"
+					},
+					"SistemaFuente": {
+						"type": "string",
+						"defaultValue": "HANA"
+					},
+					"Subproceso": {
+						"type": "string",
+						"defaultValue": "Subpr_1"
+					}
+				},
+				"variables": {
+					"TimeNow": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "1. BRONZE/Maestro Cargas"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-07-07T15:24:29Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_SQL_CC')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_CC')]",
+				"[concat(variables('factoryId'), '/datasets/DS_SAP')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS')]",
+				"[concat(variables('factoryId'), '/pipelines/Bronze_to_Silver')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SQL_to_BronzeZone')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lkp-CC-SQL",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * FROM conf.ControlCargas\nWHERE Proceso = '@{pipeline().parameters.Proceso}'\nAND Subproceso = '@{pipeline().parameters.Subproceso}'\nAND SistemaFuente = '@{pipeline().parameters.SistemaFuente}'\nAND IndicadorCargaActiva= 1\n",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_SQL_CC",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "TimeNow",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "Lkp-CC-SQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "TimeNow",
+							"value": {
+								"value": "@{formatDateTime(subtractFromTime(utcNow(), 300, 'Minute'), 'yyyyMMddHHmmss')}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ForEach-CC",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "TimeNow",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lkp-CC-SQL').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "IsFull",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@bool(item().IndicadorCargaFull)\n\n",
+											"type": "Expression"
+										},
+										"ifFalseActivities": [
+											{
+												"name": "UpdateCampoDelta_Delta",
+												"type": "Script",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Deltas",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												},
+												"typeProperties": {
+													"scripts": [
+														{
+															"type": "Query",
+															"text": {
+																"value": "UPDATE conf.ControlCargas set ValorCampoFechaCreacion = \nCASE WHEN ValorCampoFechaCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoHoraCreacion = \nCASE WHEN ValorCampoHoraCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 8, 6)}'\nELSE ValorCampoHoraCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoFechaModificacion = \nCASE WHEN ValorCampoFechaModificacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaModificacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'",
+																"type": "Expression"
+															}
+														}
+													],
+													"scriptBlockExecutionTimeout": "02:00:00"
+												}
+											},
+											{
+												"name": "Copy_From_SAP_To_ADLS_Delta",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 1,
+													"retryIntervalInSeconds": 45,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureSqlSource",
+														"sqlReaderQuery": {
+															"value": "SELECT @{item().ColumnasArchivoFuente}\nFROM\n@{item().EsquemaFuente}.@{item().ArchivoFuente}\n@{\nreplace(\n        replace(\n            replace(\n                        item().FiltrosArchivoFuenteParsed, '{variableDF1}', substring(variables('TimeNow'), 0, 8)\n            ), '{variableDF2}', substring(variables('TimeNow'), 8, 6)\n        ), '{variableDF3}', substring(variables('TimeNow'), 0, 8)\n)\n}",
+															"type": "Expression"
+														},
+														"queryTimeout": "02:00:00",
+														"partitionOption": "None"
+													},
+													"sink": {
+														"type": "ParquetSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "ParquetWriteSettings"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "DS_SQL_DBV1",
+														"type": "DatasetReference",
+														"parameters": {
+															"Schema": {
+																"value": "@{item().EsquemaFuente}",
+																"type": "Expression"
+															},
+															"Tabla": {
+																"value": "@{item().ArchivoFuente}",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "DS_ADLS",
+														"type": "DatasetReference",
+														"parameters": {
+															"Ruta": {
+																"value": "@{item().RutaArchivoDestinoParsed}/@{variables('TimeNow')}",
+																"type": "Expression"
+															},
+															"Archivo": {
+																"value": "@item().ArchivoDestino",
+																"type": "Expression"
+															},
+															"Container": {
+																"value": "@item().ContenedorDestino",
+																"type": "Expression"
+															},
+															"Extension": {
+																"value": "@item().ExtensionArchivoDestino",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "SP_Success_Delta",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Delta",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "1",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Delta').output.rowsCopied",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Delta').output.rowsRead",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)\n\n",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": {
+																"value": "@activity('Copy_From_SAP_To_ADLS_Delta').output.copyDuration",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure_Delta",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Delta",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "Bronze_To_Silver_Deltas",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SAP_To_ADLS_Delta",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "Bronze_to_Silver",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"is_full_load": {
+															"value": "@{item().IndicadorCargaFull}",
+															"type": "Expression"
+														},
+														"schema": {
+															"value": "@{item().BaseDatosFuente}",
+															"type": "Expression"
+														},
+														"table_name": {
+															"value": "@{item().ArchivoFuente}",
+															"type": "Expression"
+														},
+														"folder_date": {
+															"value": "@variables('TimeNow')",
+															"type": "Expression"
+														},
+														"RowKey": {
+															"value": "@{item().NombreCampoRowKey}",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "SP_Failure_Delta_2",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Deltas",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure_Delta_3",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SAP_To_ADLS_Delta",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SAP_To_ADLS_Delta').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											}
+										],
+										"ifTrueActivities": [
+											{
+												"name": "SP_Success",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Full",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "1",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": {
+																"value": "@activity('Copy_From_SQL_To_ADLS_Full').output.rowsCopied",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": {
+																"value": "@activity('Copy_From_SQL_To_ADLS_Full').output.rowsRead",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SQL_To_ADLS_Full').output.executionDetails)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": {
+																"value": "@activity('Copy_From_SQL_To_ADLS_Full').output.copyDuration",
+																"type": "Expression"
+															},
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "UpdateCampoDelta_Full",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SQL_To_ADLS_Full').output)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "Copy_From_SQL_To_ADLS_Full",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 1,
+													"retryIntervalInSeconds": 45,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureSqlSource",
+														"queryTimeout": "02:00:00",
+														"partitionOption": "None"
+													},
+													"sink": {
+														"type": "ParquetSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "ParquetWriteSettings"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "DS_SQL_DBV1",
+														"type": "DatasetReference",
+														"parameters": {
+															"Schema": {
+																"value": "@{item().EsquemaFuente}",
+																"type": "Expression"
+															},
+															"Tabla": {
+																"value": "@{item().ArchivoFuente}",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "DS_ADLS",
+														"type": "DatasetReference",
+														"parameters": {
+															"Ruta": {
+																"value": "@item().RutaArchivoDestinoParsed",
+																"type": "Expression"
+															},
+															"Archivo": {
+																"value": "@item().ArchivoDestino",
+																"type": "Expression"
+															},
+															"Container": {
+																"value": "@item().ContenedorDestino",
+																"type": "Expression"
+															},
+															"Extension": {
+																"value": "@item().ExtensionArchivoDestino",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "Bronze_To_Silver_Full",
+												"type": "ExecutePipeline",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SQL_To_ADLS_Full",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"userProperties": [],
+												"typeProperties": {
+													"pipeline": {
+														"referenceName": "Bronze_to_Silver",
+														"type": "PipelineReference"
+													},
+													"waitOnCompletion": true,
+													"parameters": {
+														"is_full_load": {
+															"value": "@{item().IndicadorCargaFull}",
+															"type": "Expression"
+														},
+														"schema": {
+															"value": "@{item().BaseDatosFuente}",
+															"type": "Expression"
+														},
+														"table_name": {
+															"value": "@{item().ArchivoFuente}",
+															"type": "Expression"
+														},
+														"folder_date": "No aplica",
+														"RowKey": {
+															"value": "@{item().NombreCampoRowKey}",
+															"type": "Expression"
+														}
+													}
+												}
+											},
+											{
+												"name": "UpdateCampoDelta_Full",
+												"type": "Script",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Full",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												},
+												"typeProperties": {
+													"scripts": [
+														{
+															"type": "Query",
+															"text": {
+																"value": "UPDATE conf.ControlCargas set ValorCampoFechaCreacion = \nCASE WHEN CampoFechaCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoHoraCreacion = \nCASE WHEN CampoHoraCreacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 8, 6)}'\nELSE ValorCampoHoraCreacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'\n\n\nUPDATE conf.ControlCargas set ValorCampoFechaModificacion = \nCASE WHEN CampoFechaModificacion IS NOT NULL THEN '@{substring(variables('TimeNow'), 0, 8)}'\nELSE ValorCampoFechaModificacion END\nWHERE PkControlCargas = '@{item().PkControlCargas}'\nAND Proceso = '@{item().Proceso}'\nAND Subproceso = '@{item().Subproceso}'\nAND SistemaFuente = '@{item().SistemaFuente}'",
+																"type": "Expression"
+															}
+														}
+													],
+													"scriptBlockExecutionTimeout": "02:00:00"
+												}
+											},
+											{
+												"name": "SP_Failure_2",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Bronze_To_Silver_Full",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SQL_To_ADLS_Full').output)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											},
+											{
+												"name": "SP_Failure_3",
+												"type": "SqlServerStoredProcedure",
+												"dependsOn": [
+													{
+														"activity": "Copy_From_SQL_To_ADLS_Full",
+														"dependencyConditions": [
+															"Failed"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"storedProcedureName": "[[conf].[PostLogAuditoriaCargas]",
+													"storedProcedureParameters": {
+														"EstadoEjecucion": {
+															"value": "0",
+															"type": "Int32"
+														},
+														"FilasCopiadas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FilasLeidas": {
+															"value": null,
+															"type": "Int32"
+														},
+														"FkControlCargas": {
+															"value": {
+																"value": "@item().PkControlCargas",
+																"type": "Expression"
+															},
+															"type": "Int64"
+														},
+														"LogDataFactory": {
+															"value": {
+																"value": "@string(activity('Copy_From_SQL_To_ADLS_Full').output)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"ArchivoFuente": {
+															"value": {
+																"value": "@item().ArchivoFuente",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"NombreTrigger": {
+															"value": {
+																"value": "@addhours(pipeline().TriggerTime,-5)",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"Pipeline": {
+															"value": {
+																"value": "@pipeline().Pipeline",
+																"type": "Expression"
+															},
+															"type": "String"
+														},
+														"TiempoCopiado": {
+															"value": null,
+															"type": "Int32"
+														}
+													}
+												},
+												"linkedServiceName": {
+													"referenceName": "LS_SQL_CC",
+													"type": "LinkedServiceReference"
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"Proceso": {
+						"type": "string",
+						"defaultValue": "Comercial"
+					},
+					"SistemaFuente": {
+						"type": "string",
+						"defaultValue": "SQL_DBV1"
+					},
+					"Subproceso": {
+						"type": "string",
+						"defaultValue": "Subpr_3"
+					}
+				},
+				"variables": {
+					"TimeNow": {
+						"type": "String"
+					},
+					"TimeSql": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "1. BRONZE/Maestro Cargas"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-07-11T19:08:07Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_SQL_CC')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_CC')]",
+				"[concat(variables('factoryId'), '/datasets/DS_SQL_DBV1')]",
+				"[concat(variables('factoryId'), '/datasets/DS_ADLS')]",
+				"[concat(variables('factoryId'), '/pipelines/Bronze_to_Silver')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ADLS')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Ruta": {
+						"type": "string"
+					},
+					"Archivo": {
+						"type": "string"
+					},
+					"Container": {
+						"type": "string"
+					},
+					"Extension": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@{dataset().Archivo}.@{dataset().Extension}",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().Ruta",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().Container",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_ADLS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SAP')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SAP",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Esquema": {
+						"type": "string"
+					},
+					"Table": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "SapHanaTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().Esquema",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().Table",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SAP')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_CC')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_CC",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "PkControlCargas",
+						"type": "bigint",
+						"precision": 19
+					},
+					{
+						"name": "Proceso",
+						"type": "varchar"
+					},
+					{
+						"name": "SistemaFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "PropietarioFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "RutaArchivoFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "NombreArchivoFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "DelimitadorArchivoFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "ColumnasArchivoFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "FiltrosArchivoFuente",
+						"type": "varchar"
+					},
+					{
+						"name": "RutaArchivoDestino",
+						"type": "varchar"
+					},
+					{
+						"name": "NombreArchivoDestino",
+						"type": "varchar"
+					},
+					{
+						"name": "ExtencionArchivoDestino",
+						"type": "varchar"
+					},
+					{
+						"name": "DelimitadorArchivoDestino",
+						"type": "varchar"
+					},
+					{
+						"name": "IndicadorFact",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "IndicadorCargaActiva",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "FechaActualizacion",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "NombreTablaStaging",
+						"type": "varchar"
+					},
+					{
+						"name": "EsquemaTablaStaging",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "conf",
+					"table": "ControlCargas"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_CC')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_DBV1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_DBV1",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Schema": {
+						"type": "string"
+					},
+					"Tabla": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().Schema",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().Tabla",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_DBV1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_DWH')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQL_DWH",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_SQL_DWH')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ADBK')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Servicio que nos permite conectar con Azure Databricks",
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-3559695151498017.17.azuredatabricks.net",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KEYVAULT",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "DBW-Token"
+					},
+					"existingClusterId": "[parameters('LS_ADBK_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_KEYVAULT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_ADLS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('LS_ADLS_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KEYVAULT",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "dls-accountKey-modernaDWH"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_KEYVAULT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_KEYVAULT')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('LS_KEYVAULT_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SAP')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "SapHana",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_SAP_connectionString')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KEYVAULT",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "SapPassWordConsulta"
+					}
+				},
+				"connectVia": {
+					"referenceName": "ARQLR02-Shared",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/ARQLR02-Shared')]",
+				"[concat(variables('factoryId'), '/linkedServices/LS_KEYVAULT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQL_CC')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_SQL_CC_connectionString')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KEYVAULT",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "SQLConfigPassword"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_KEYVAULT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQL_DBV1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_SQL_DBV1_connectionString')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KEYVAULT",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "SQLModernaBIAdminPass"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_KEYVAULT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQL_DWH')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_SQL_DWH_connectionString')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KEYVAULT",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "SQLArmNubeAdminPass"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_KEYVAULT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Trigger_Diario_Deltas_SAP_Comercial')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "El presente Trigger ejecuta todas las tablas del área comercial que estén en formato incremental bajo el control de cargas, (CC)",
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "SAP_to_BronzeZone",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"Proceso": "[parameters('Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_Proceso')]",
+							"SistemaFuente": "[parameters('Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_SistemaFuente')]",
+							"Subproceso": "[parameters('Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_Subproceso')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2023-06-26T16:53:00",
+						"timeZone": "SA Pacific Standard Time",
+						"schedule": {
+							"minutes": [
+								59
+							],
+							"hours": [
+								23
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/SAP_to_BronzeZone')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Trigger_Diario_Deltas_SAP_Logistico')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "SAP_to_BronzeZone",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"Proceso": "[parameters('Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_Proceso')]",
+							"SistemaFuente": "[parameters('Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_SistemaFuente')]",
+							"Subproceso": "[parameters('Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_Subproceso')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2023-07-12T17:54:00",
+						"timeZone": "SA Pacific Standard Time",
+						"schedule": {
+							"minutes": [
+								59
+							],
+							"hours": [
+								23
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/SAP_to_BronzeZone')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Trigger_Diario_Deltas_SQL_Comercial')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "SQL_to_BronzeZone",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"Proceso": "[parameters('Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_Proceso')]",
+							"SistemaFuente": "[parameters('Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_SistemaFuente')]",
+							"Subproceso": "[parameters('Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_Subproceso')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2023-07-12T17:52:00",
+						"timeZone": "SA Pacific Standard Time",
+						"schedule": {
+							"minutes": [
+								59
+							],
+							"hours": [
+								23
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/SQL_to_BronzeZone')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ARQLR02-Shared')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {
+					"linkedInfo": {
+						"resourceId": "[parameters('ARQLR02-Shared_properties_typeProperties_linkedInfo_resourceId')]",
+						"authorizationType": "Rbac"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

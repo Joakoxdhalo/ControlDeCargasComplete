@@ -1,0 +1,66 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "ADF-ModernaDWH-Prod"
+		},
+		"LS_SAP_connectionString": {
+			"value": "SERVERNODE=10.3.16.13:30015;UID=SAPCONSULTA"
+		},
+		"LS_SQL_CC_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=sqldv-modernadwh-prod.database.windows.net;Initial Catalog=SQLDB-ModernaDWH-Prod;User ID=admin_sql"
+		},
+		"LS_SQL_DBV1_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=arm-nube-sql-dbv1.database.windows.net;Initial Catalog=ARM_ModernaBI;User ID=admin_moderna"
+		},
+		"LS_SQL_DWH_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=arm-nube-sql-dwh1.database.windows.net;Initial Catalog=DWH_Comercial;User ID=admin_dwh"
+		},
+		"LS_ADBK_properties_typeProperties_existingClusterId": {
+			"value": "0623-191725-f5jlsq0l"
+		},
+		"LS_ADLS_properties_typeProperties_url": {
+			"value": "https://dlsmodernadwhprod.dfs.core.windows.net/"
+		},
+		"LS_KEYVAULT_properties_typeProperties_baseUrl": {
+			"value": "https://KV-ModernaDWH-Prod.vault.azure.net/"
+		},
+		"Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_Proceso": {
+			"value": "Comercial"
+		},
+		"Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_SistemaFuente": {
+			"value": "HANA"
+		},
+		"Trigger_Diario_Deltas_SAP_Comercial_properties_SAP_to_BronzeZone_parameters_Subproceso": {
+			"value": "Subpr_1"
+		},
+		"Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_Proceso": {
+			"value": "Logistico"
+		},
+		"Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_SistemaFuente": {
+			"value": "HANA"
+		},
+		"Trigger_Diario_Deltas_SAP_Logistico_properties_SAP_to_BronzeZone_parameters_Subproceso": {
+			"value": "Pedidos"
+		},
+		"Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_Proceso": {
+			"value": "Comercial"
+		},
+		"Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_SistemaFuente": {
+			"value": "SQL_DBV1"
+		},
+		"Trigger_Diario_Deltas_SQL_Comercial_properties_SQL_to_BronzeZone_parameters_Subproceso": {
+			"value": "Subpr_3"
+		},
+		"ARQLR02-Shared_properties_typeProperties_linkedInfo_resourceId": {
+			"value": "/subscriptions/edff7a7d-111f-466f-9d0b-4f96151ffc5c/resourcegroups/ModernaRG01/providers/Microsoft.DataFactory/factories/ModernaDataFactory02/integrationruntimes/ArqIR02"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
