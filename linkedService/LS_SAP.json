@@ -14,10 +14,6 @@
 				},
 				"secretName": "SapPassWordConsulta"
 			}
-		},
-		"connectVia": {
-			"referenceName": "ARQLR02-Shared",
-			"type": "IntegrationRuntimeReference"
 		}
 	}
 }
